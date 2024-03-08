@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
 const dotenv = require('dotenv');
-const cheerio = require("cheerio");
 
 //Initialize express
 const app = express();
