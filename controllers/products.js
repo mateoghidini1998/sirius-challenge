@@ -1,15 +1,15 @@
-const axios = require("axios");
-const cheerio = require("cheerio");
 const Redis = require('ioredis');
 const redis = new Redis();
+const ErrorResponse = require('../utils/errorResponse')
+const commonWords = require('../utils/commonWords')
+const asyncHandler = require('../middleware/async')
+const scrapeUrl = require('../utils/scrapeUrl')
 
 
 //@route   POST /product-word-cloud
 //@desc    Create product word cloud
 //@access  Public
-exports.getData = async (req, res) => {
-    const commonWords = new Set(['a', 'the', 'is', 'in', 'an', 'and', 'of', 'for', 'on', 'at', 'with', 'to', 'your', 'it', 'you', 'or', 'this', 'above', 'about', 'below', 'between', 'beneath', 'down', 'from', 'off', 'like', 'near', 'behind', 'over', 'through', 'up', 'under', 'upon', 'without', 'till', 'throughout', 'into', 'but', 'by', 'among', 'are', 'thoughtfully' ]);
-
+exports.getData = asyncHandler(async (req, res, next) => {
     const shouldExcludeWord = (word) => {
         return commonWords.has(word) || !isNaN(word);
     }
@@ -18,7 +18,7 @@ exports.getData = async (req, res) => {
 
     //Check if there is an url
     if (!url) {
-        return res.status(400).send("URL is missing");
+        return next(new ErrorResponse('Please provide a url', 400))
     }
 
     //Verify if the urls are already stored in cache.
@@ -27,31 +27,20 @@ exports.getData = async (req, res) => {
         console.log("Data retrieved from cache");
         return res.send(JSON.parse(cachedData))
     } else {
-        try {
-            const response = await axios.get(url, {
-                headers: {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36"
-                }
-            });
+        
+        //Target the selector to scrap from the product.
+        const description = await scrapeUrl(url);
 
-            const html = response.data;
-            const $ = cheerio.load(html);
+        //Sort and filter the words from the description.
+        const words = description.split(/\W+/).map(word => word.toLowerCase()).filter(word => word && word.length > 1 && !shouldExcludeWord(word)).slice(0, 20);
+        console.log(words);
+        const wordCount = words.reduce((counts, word) => ({...counts, [word]: (counts[word] || 0) + 1}), {});
 
-            //Target the selector to scrap from the product.
-            const description = $('#productDescription > p').first().text();
+        const wordCloud = Object.entries(wordCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-            //Sort and filter the words from the description.
-            const words = description.split(/\W+/).map(word => word.toLowerCase()).filter(word => word && !shouldExcludeWord(word));
-            const wordCount = words.reduce((counts, word) => ({...counts, [word]: (counts[word] || 0) + 1}), {});
+        //Set a key and value to store in cache
+        await redis.set(url, JSON.stringify(wordCloud));
 
-            const wordCloud = Object.entries(wordCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-
-            //Set a key and value to store in cache
-            await redis.set(url, JSON.stringify(wordCloud));
-
-            return res.send(wordCloud);
-        } catch (error) {
-            return res.status(500).send(error.message);
-        }
+        return res.send(wordCloud);
     }
-};
+});
