@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const Redis = require('ioredis');
-const redis = new Redis();
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const { xss } = require('express-xss-sanitizer');
+const hpp = require('hpp');
 
 
 //Initialize express
@@ -13,6 +15,25 @@ app.use(cors());
 
 //Body parser
 app.use(express.json());
+
+//Rate limiting
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000, //10 mins
+    max: 100
+});
+
+app.use(limiter);
+
+//Use helmet, hide X-Powered-By header, and set new security headers
+app.use(helmet());
+
+//Use xss sanitizer
+app._router.use(xss());
+
+//Use hpp for preventing param pollution
+app.use(hpp());
+
+app.use(express.urlencoded({ extended: true }))
 
 //Route file
 const products = require('./routes/products');
@@ -32,3 +53,4 @@ app.listen(PORT, () => {
 });
 
 
+module.exports = app;
