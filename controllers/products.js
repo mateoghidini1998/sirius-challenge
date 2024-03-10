@@ -1,16 +1,14 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-const NodeCache = require("node-cache");
+const Redis = require('ioredis');
+const redis = new Redis();
 
-const urlCache = new NodeCache({ stdTTL: 600 });
 
 //@route   POST /product-word-cloud
 //@desc    Create product word cloud
 //@access  Public
-
-
 exports.getData = async (req, res) => {
-    const commonWords = new Set(['a', 'the', 'is', 'in', 'an', 'and', 'of', 'for', 'on', 'at', 'with', 'to', 'your', 'it', 'you ']);
+    const commonWords = new Set(['a', 'the', 'is', 'in', 'an', 'and', 'of', 'for', 'on', 'at', 'with', 'to', 'your', 'it', 'you', 'or', 'this', 'above', 'about', 'below', 'between', 'beneath', 'down', 'from', 'off', 'like', 'near', 'behind', 'over', 'through', 'up', 'under', 'upon', 'without', 'till', 'throughout', 'into', 'but', 'by', 'among', 'are', 'thoughtfully' ]);
 
     const shouldExcludeWord = (word) => {
         return commonWords.has(word) || !isNaN(word);
@@ -24,10 +22,10 @@ exports.getData = async (req, res) => {
     }
 
     //Verify if the urls are already stored in cache.
-    let cachedData = urlCache.get(url);
+    let cachedData = await redis.get(url);
     if (cachedData) {
         console.log("Data retrieved from cache");
-        return res.send(cachedData);
+        return res.send(JSON.parse(cachedData))
     } else {
         try {
             const response = await axios.get(url, {
@@ -49,9 +47,8 @@ exports.getData = async (req, res) => {
             const wordCloud = Object.entries(wordCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
             //Set a key and value to store in cache
-            urlCache.set(url, wordCloud);
+            await redis.set(url, JSON.stringify(wordCloud));
 
-            
             return res.send(wordCloud);
         } catch (error) {
             return res.status(500).send(error.message);
