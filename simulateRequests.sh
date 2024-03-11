@@ -1,22 +1,134 @@
-#!/bin/bash
+#!/bin/sh
 
-# Script parameters
-host=$1
-port=$2
-# Products urls list
-productUrls=("http://www.amazon.com/gp/product/B00VVOCSOU" "https://www.amazon.com/TCL-Class-Full-1080p-Smart/dp/B0B232FKLB/" "https://www.amazon.com/RCA-Class-720P-Smart-RTR3261-CA/dp/B07DCDNHZQ/" "https://www.amazon.com/Roku-Select-RokuTV-Picture-Customizable/dp/B0CLFQD1SN/" "https://www.amazon.com/Philips-Universal-Panasonic-Streaming-SRP3249B/dp/B084XXXNVK")
+SERVER=$1
+PORT=$2
+PARAM=$3
+SLEEP_TIME=$4
 
-# Function to excecute the CURL request.
-makeRequest() {
-    url=$1
-    curl -X POST -H "Content-Type: application/json" -d "{\"url\": \"${url}\"}" "http://${host}:${port}/api/products/wordcloud"
-}
+PRODUCT_URLS=(
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCSOU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBFZNG"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00CBNIXHQ"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00HUGXOAU"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00KRMMCFM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TSUGXKE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00VVOCQHE"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00TRQPVKM"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+    "https%3A%2F%2Fwww.amazon.com%2Fgp%2Fproduct%2FB00SMBESTI"
+)
 
-# Excecute all request at the same time
-export -f makeRequest
-for url in "${productUrls[@]}"; do
-    makeRequest "$url" &
+for url in "${PRODUCT_URLS[@]}"; do
+ curl -X POST "$SERVER:$PORT/api/products/wordcloud?$PARAM=$url"
+ sleep $SLEEP_TIME
 done
-
-# Wait untill all the requests are done
-wait
