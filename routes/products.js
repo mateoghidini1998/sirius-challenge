@@ -2,8 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 const {
-    getData
+    createWordCloud
 } = require('../controllers/products');
 
-router.post('/wordcloud', getData);
+router.post('/wordcloud', createWordCloud);
 module.exports = router;
